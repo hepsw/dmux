@@ -3,7 +3,75 @@ dmux
 
 docker + tmux = dmux !
 
-This is demo of docker's `pause` and `unpause` with [tmux](http://tmux.sourceforge.net/). 
+This is demo of docker's `pause` and `unpause` command with [tmux](http://tmux.sourceforge.net/). 
+
+## Synopsis
+
+`dmux` create docker container environment with tmux pane. You can try some commands there and destroy it. You can also save your tried status as Docker image.
+
+## Demo
+
+[Now construction]()
+
+## Requirement
+
+- [Docker v0.12.0 or later](http://www.docker.com/)
+- [Tmux](http://tmux.sourceforge.net/)
+
+## Command
+
+Before, you need to create new tmux session.
+
+First, you need to create new container:
+
+```bash
+$ dmux init
+```
+
+After that new tmux pane is created and docker container environment is there. You can try some command or enjoy Docker environment.
+
+If you want pause container, from anoher window:
+
+```bash
+$ dmux stop
+```
+
+This will pause container, it won't send `SIGTERM` and `SIGKILL`. It will freeze cotainer process with cgroup freezer. **You can restart process from the point where you exec stop**.
+
+If you want to unpauze container and attach it again:
+
+```bash
+$ dmux start
+```
+
+If you delete container:
+
+```bash
+$ dmux delete
+```
+
+You can save your container as image:
+
+```bash
+$ dmux save [Image]
+```
+
+## Installation
+
+Not yet,
+
+```bash
+$ brew tap tcnksm/dmux
+$ brew intall dmux
+```
+
+## Development
+
+You can prepare it standard way:
+
+```bash
+$ go get install github.com/tcnksm/dmux
+```
 
 ## VS.
 
