@@ -7,6 +7,7 @@ import (
 
 var mainFlags = []cli.Flag{
 	cli.BoolFlag{"debug", "Run as DEBUG mode"},
+	cli.StringFlag{"host", "", "Set Docker host"},
 }
 
 func main() {

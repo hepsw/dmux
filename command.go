@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"github.com/codegangsta/cli"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 )
+
+const dmuxContainerName = "dmux-playground"
 
 var Commands = []cli.Command{
 	commandInit,
@@ -72,78 +75,116 @@ func debug(v ...interface{}) {
 	}
 }
 
-func doInit(c *cli.Context) {
-	// Change Session name
-	cmd := exec.Command("tmux", "rename-session", "dmux")
+func debugCmd(cmd *exec.Cmd) {
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
+}
 
-	// Start new container with tmux new window
-	StartNewContainerCmd := "exec docker run -t -i --name dmux-playground ubuntu /bin/bash"
+func assert(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func doInit(c *cli.Context) {
+
+	imageName := "ubuntu"
+	if c.String("image") != "" {
+		imageName = c.String("image")
+	}
+	debug("imageName:", imageName)
+
 	splitDirection := "-v" // Should be configrable
-	cmd = exec.Command("tmux", "split-window", splitDirection, StartNewContainerCmd)
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
+
+	if HasContainer(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container %s is already initialized\n", dmuxContainerName)
+		os.Exit(1)
+	}
+
+	// Start new container with tmux new pane
+	StartNewContainerCmd := fmt.Sprintf("exec docker run -t -i --name %s %s /bin/bash", dmuxContainerName, imageName)
+	ExecCmdWithSplitWindow(splitDirection, StartNewContainerCmd)
+
 }
 
 func doStop(c *cli.Context) {
-	// Pause container
-	cmd := exec.Command("docker", "pause", "dmux-playground")
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
 
-	// Retrieve Docker running pane
-	cmd = exec.Command("tmux", "list-panes", "-F", "#I.#P:#{pane_start_command}")
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	buf, _ := cmd.Output()
-	listPanes := strings.TrimRight(string(buf), "\000")
-
-	var paneNum = ""
-	var values = strings.Split(listPanes, "\n")
-	for _, info := range values {
-
-		if !strings.Contains(info, ":") {
-			continue
-		}
-		paneStartCmd := strings.Split(info, ":")[1]
-		debug(paneStartCmd)
-		if strings.HasPrefix(paneStartCmd, "exec docker run") {
-			paneNum = strings.Split(info, ":")[0]
-			debug(paneNum)
-		}
+	if !HasContainer(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
+		os.Exit(1)
 	}
 
-	debug("docker running pane:", "dmux:"+paneNum)
+	if IsPaused(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container is already stoped, start it with `dmux start` command\n")
+		os.Exit(1)
+	}
+
+	PauseContainer(dmuxContainerName)
 
 	// Kill docker running pane
-	cmd = exec.Command("tmux", "kill-pane", "-t", "dmux:"+paneNum)
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
+	paneName := RetrievePaneNumWithCmd("exec docker")
+	if paneName == "" {
+		os.Exit(0)
+	}
+
+	debug("docker running pane:", paneName)
+	KillPane(paneName)
+	os.Exit(0)
 }
 
 func doStart(c *cli.Context) {
-	// Unpause container
-	cmd := exec.Command("docker", "unpause", "dmux-playground")
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
 
-	// Split window
+	if !HasContainer(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
+		os.Exit(1)
+	}
+
+	if !IsPaused(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container is already working\n")
+		os.Exit(1)
+	}
+
+	UnpauseContainer(dmuxContainerName)
+
+	// Attach container with tmux new pane
 	attachContainerCmd := "exec docker attach dmux-playground"
 	splitDirection := "-v" // Should be configrable
-	cmd = exec.Command("tmux", "split-window", splitDirection, attachContainerCmd)
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
+	ExecCmdWithSplitWindow(splitDirection, attachContainerCmd)
+
+	os.Exit(0)
 }
 
 func doDelete(c *cli.Context) {
-	// ToDO: # docker inspect  - format '{{.State.Paused }}' dmux-playground
-	cmd := exec.Command("docker", "rm", "-f", "dmux-playground")
-	cmd.Run()
 
-	cmd = exec.Command("tmux", "kill-pane", "-t", "dmux:1.3")
-	cmd.Run()
+	if !HasContainer(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
+		os.Exit(1)
+	}
+
+	if IsPaused(dmuxContainerName) {
+		UnpauseContainer(dmuxContainerName)
+	}
+
+	DeleteContainer(dmuxContainerName)
 }
 
 func doSave(c *cli.Context) {
-	//ToDo
+
+	if len(c.Args()) != 1 {
+		fmt.Fprintf(os.Stderr, "Set docker image name for save\n")
+		os.Exit(1)
+	}
+
+	imageName := c.Args().First()
+
+	if !HasContainer(dmuxContainerName) {
+		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
+		os.Exit(1)
+	}
+
+	if IsPaused(dmuxContainerName) {
+		// Unpause container
+		UnpauseContainer(dmuxContainerName)
+	}
+
+	SaveContainer(dmuxContainerName, imageName)
 }
