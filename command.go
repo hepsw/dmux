@@ -76,18 +76,12 @@ func doInit(c *cli.Context) {
 	// Change Session name
 	cmd := exec.Command("tmux", "rename-session", "dmux")
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	//cmd.Stdout = ioutil.Discard
-	//cmd.Stderr = ioutil.Discard
 	cmd.Run()
 
-	// Get current pane number
-	cmd = exec.Command("tmux", "split-window", "-v")
-	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
-	cmd.Run()
-
-	// Start new container
-	StartContainerCmd := "docker run -t -i --name dmux-playground ubuntu /bin/bash"
-	cmd = exec.Command("tmux", "send-keys", "-t", "dmux:1.3", StartContainerCmd, "C-m")
+	// Start new container with tmux new window
+	StartNewContainerCmd := "exec docker run -t -i --name dmux-playground ubuntu /bin/bash"
+	splitDirection := "-v" // Should be configrable
+	cmd = exec.Command("tmux", "split-window", splitDirection, StartNewContainerCmd)
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
 	cmd.Run()
 }
@@ -98,28 +92,51 @@ func doStop(c *cli.Context) {
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
 	cmd.Run()
 
-	// Kill pane which container works
-	cmd = exec.Command("tmux", "kill-pane", "-t", "dmux:1.3")
+	// Retrieve Docker running pane
+	cmd = exec.Command("tmux", "list-panes", "-F", "#I.#P:#{pane_start_command}")
+	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
+	buf, _ := cmd.Output()
+	listPanes := strings.TrimRight(string(buf), "\000")
+
+	var paneNum = ""
+	var values = strings.Split(listPanes, "\n")
+	for _, info := range values {
+
+		if !strings.Contains(info, ":") {
+			continue
+		}
+		paneStartCmd := strings.Split(info, ":")[1]
+		debug(paneStartCmd)
+		if strings.HasPrefix(paneStartCmd, "exec docker run") {
+			paneNum = strings.Split(info, ":")[0]
+			debug(paneNum)
+		}
+	}
+
+	debug("docker running pane:", "dmux:"+paneNum)
+
+	// Kill docker running pane
+	cmd = exec.Command("tmux", "kill-pane", "-t", "dmux:"+paneNum)
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
 	cmd.Run()
 }
 
 func doStart(c *cli.Context) {
-	// Split window
-	cmd := exec.Command("tmux", "split-window", "-v")
+	// Unpause container
+	cmd := exec.Command("docker", "unpause", "dmux-playground")
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
 	cmd.Run()
 
-	// Start container
-	startContainerCmd := "docker unpause dmux-playground && docker attach dmux-playground"
-	cmd = exec.Command("tmux", "send-keys", "-t", "dmux:1.3", startContainerCmd, "C-m")
+	// Split window
+	attachContainerCmd := "exec docker attach dmux-playground"
+	splitDirection := "-v" // Should be configrable
+	cmd = exec.Command("tmux", "split-window", splitDirection, attachContainerCmd)
 	debug(cmd.Args[0], strings.Join(cmd.Args[1:], " "))
 	cmd.Run()
 }
 
 func doDelete(c *cli.Context) {
 	// ToDO: # docker inspect  - format '{{.State.Paused }}' dmux-playground
-
 	cmd := exec.Command("docker", "rm", "-f", "dmux-playground")
 	cmd.Run()
 
