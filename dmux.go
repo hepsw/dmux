@@ -7,7 +7,6 @@ import (
 
 var mainFlags = []cli.Flag{
 	cli.BoolFlag{"debug", "Run as DEBUG mode"},
-	cli.StringFlag{"host", "", "Set Docker host"},
 }
 
 func main() {
@@ -21,8 +20,13 @@ func main() {
 	app.Commands = Commands
 
 	app.Before = func(c *cli.Context) error {
+
 		if c.GlobalBool("debug") {
 			os.Setenv("DEBUG", "1")
+		}
+
+		if os.Getenv("DOCKER_HOST") == "" {
+			os.Setenv("DOCKER_HOST","unix:///var/run/docker.sock")
 		}
 
 		// ToDo: check command docker and tmux

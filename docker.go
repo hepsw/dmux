@@ -37,14 +37,14 @@ func SaveContainer(containerName string, imageName string) {
 	debug(image.ID)
 }
 
-func HasContainer(containerName string) bool {
+func HasContainer(containerName string, fromAll bool) bool {
 
 	dockerAddr := os.Getenv("DOCKER_HOST")
 	client, err := docker.NewClient(dockerAddr)
 	assert(err)
 
 	containers, err := client.ListContainers(docker.ListContainersOptions{
-		All: false,
+		All: fromAll,
 	})
 	assert(err)
 
@@ -56,6 +56,34 @@ func HasContainer(containerName string) bool {
 		}
 	}
 
+	return false
+}
+
+func IsExited(containerName string) bool {
+
+	dockerAddr := os.Getenv("DOCKER_HOST")
+	client, err := docker.NewClient(dockerAddr)
+	assert(err)
+
+	containers, err := client.ListContainers(docker.ListContainersOptions{
+		All: true,
+	})
+	assert(err)
+
+	for _, listing := range containers {
+		debug(listing.Names[0])
+		debug(listing.Status)
+
+		workContainerName := strings.TrimLeft(listing.Names[0], "/")
+		if workContainerName != containerName {
+			continue
+		}
+
+		containerStatus := listing.Status
+		if strings.HasPrefix(containerStatus, "Exited") {
+			return true
+		}
+	}
 	return false
 }
 
