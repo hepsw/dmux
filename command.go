@@ -95,7 +95,11 @@ func doInit(c *cli.Context) {
 
 	splitDirection := "-v" // Should be configrable
 
-	if HasContainer(dmuxContainerName) {
+	if IsExited(dmuxContainerName) {
+		DeleteContainer(dmuxContainerName)
+	}
+
+	if HasContainer(dmuxContainerName, false) {
 		fmt.Fprintf(os.Stderr, "Container %s is already initialized\n", dmuxContainerName)
 		os.Exit(1)
 	}
@@ -108,7 +112,7 @@ func doInit(c *cli.Context) {
 
 func doStop(c *cli.Context) {
 
-	if !HasContainer(dmuxContainerName) {
+	if !HasContainer(dmuxContainerName, false) {
 		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
 		os.Exit(1)
 	}
@@ -133,17 +137,16 @@ func doStop(c *cli.Context) {
 
 func doStart(c *cli.Context) {
 
-	if !HasContainer(dmuxContainerName) {
+	if !HasContainer(dmuxContainerName, false) {
 		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
 		os.Exit(1)
 	}
 
-	if !IsPaused(dmuxContainerName) {
-		fmt.Fprintf(os.Stderr, "Container is already working\n")
-		os.Exit(1)
+	if IsPaused(dmuxContainerName) {
+		UnpauseContainer(dmuxContainerName)
+		// fmt.Fprintf(os.Stderr, "Container is already working\n")
+		//os.Exit(1)
 	}
-
-	UnpauseContainer(dmuxContainerName)
 
 	// Attach container with tmux new pane
 	attachContainerCmd := "exec docker attach dmux-playground"
@@ -155,7 +158,8 @@ func doStart(c *cli.Context) {
 
 func doDelete(c *cli.Context) {
 
-	if !HasContainer(dmuxContainerName) {
+
+	if !HasContainer(dmuxContainerName, true) {
 		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
 		os.Exit(1)
 	}
@@ -176,7 +180,7 @@ func doSave(c *cli.Context) {
 
 	imageName := c.Args().First()
 
-	if !HasContainer(dmuxContainerName) {
+	if !HasContainer(dmuxContainerName, false) {
 		fmt.Fprintf(os.Stderr, "Container is not initialized, initialize it with `dmux init` command\n")
 		os.Exit(1)
 	}
