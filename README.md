@@ -3,7 +3,7 @@ dmux
 
 docker + tmux = dmux !
 
-This is demo of docker's `pause` and `unpause` command with [tmux](http://tmux.sourceforge.net/). 
+This is demo of docker's `pause` and `unpause` command with [tmux](http://tmux.sourceforge.net/).
 
 ## Synopsis
 
@@ -58,12 +58,9 @@ $ dmux save [Image]
 
 ## Installation
 
-Not yet,
+Binary files are distributed.
 
-```bash
-$ brew tap tcnksm/dmux
-$ brew intall dmux
-```
+[ ![Download](https://api.bintray.com/packages/tcnksm/dmux/dmux/images/download.png) ](https://bintray.com/tcnksm/dmux/dmux/_latestVersion)
 
 ## Development
 
@@ -75,7 +72,7 @@ $ go get install github.com/tcnksm/dmux
 
 ## VS.
 
-- [jpetazzo/critmux](https://github.com/jpetazzo/critmux) - critmux uses [CRIU]() for stop container. `dmux` uses docker's `pause` and `unpause` command. 
+- [jpetazzo/critmux](https://github.com/jpetazzo/critmux) - critmux uses [CRIU]() for stop container. `dmux` uses docker's `pause` and `unpause` command.
 
 ## Author
 
