@@ -3,8 +3,6 @@ dmux
 
 docker + tmux = dmux !
 
-This is demo of docker's `pause` and `unpause` command with [tmux](http://tmux.sourceforge.net/).
-
 ## Synopsis
 
 `dmux` create docker container environment with tmux pane. You can try some commands there and destroy it. You can also save your tried status as Docker image.
@@ -60,7 +58,7 @@ $ dmux save [Image]
 
 Binary files are distributed.
 
-[ ![Download](https://api.bintray.com/packages/tcnksm/dmux/dmux/images/download.png) ](https://bintray.com/tcnksm/dmux/dmux/_latestVersion)
+[ ![Download](https://api.bintray.com/packages/tcnksm/dmux/dmux/images/download.png) ](http://dl.bintray.com/tcnksm/dmux/)
 
 ## Development
 
